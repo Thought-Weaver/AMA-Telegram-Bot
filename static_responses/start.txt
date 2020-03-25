@@ -2,8 +2,8 @@ Welcome to AMA Bot! This bot was made to create a running AMA board for people w
 
 To get started, you can make your AMA using /addme.
 
-You can ask questions on other people's AMAs using /ama {/users ID} {text}.
+You can ask questions on other people's AMAs using /ama {/users ID} {text}. If you want your question to be anonymous, ask your question to the person from your DMs with the bot.
 
-You can send a reply to the person who asked you an AMA question by using /reply {question ID} {text}.
+You can send a reply to the person who asked you an AMA question by using /reply {question ID} {text}. Feel free to reply in a public chat or in your DMs with the bot!
 
 To learn more, use /help.
