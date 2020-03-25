@@ -15,7 +15,6 @@ from collections import defaultdict
 with open("api_key.txt", 'r') as f:
     TOKEN = f.read().rstrip()
 
-PORT = int(os.environ.get("PORT", "8443"))
 # Format is mmddyyyy
 PATCHNUMBER = "03252020"
 
@@ -336,7 +335,7 @@ if __name__ == "__main__":
             dispatcher.add_handler(CommandHandler(c[2], func, pass_args=True))
         elif c[1] == 2:
             dispatcher.add_handler(CommandHandler(c[2], func, pass_chat_data=True))
-        elif c[2] == 3:
+        elif c[1] == 3:
             dispatcher.add_handler(CommandHandler(c[2], func, pass_chat_data=True, pass_args=True))
 
     # Set up job queue for repeating automatic tasks.
