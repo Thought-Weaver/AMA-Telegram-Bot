@@ -16,8 +16,8 @@ from collections import defaultdict
 with open("api_key.txt", 'r') as f:
     TOKEN = f.read().rstrip()
 
-# Format is mmddyyyy
-PATCHNUMBER = "03252020"
+# Format is mmddyyyy and then additional letters if I need a hotfix.
+PATCHNUMBER = "03252020A"
 
 """
 Contains:
