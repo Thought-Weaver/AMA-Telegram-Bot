@@ -146,7 +146,7 @@ def users_handler(bot, update):
 
     text = "Users:\n\n"
     for i, tup in enumerate(ama_database["users"]):
-        text += "(%s): %s" % (i, tup[1])
+        text += "(%s): %s\n" % (i, tup[1])
     send_message(bot, chat_id, text)
 
 
