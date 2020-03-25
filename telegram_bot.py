@@ -10,6 +10,7 @@ import logging
 import os
 import shutil
 import pickle
+import datetime
 from collections import defaultdict
 
 with open("api_key.txt", 'r') as f:
@@ -74,15 +75,15 @@ def get_username(user):
     return username
 
 
-def confirm_ama_handler(bot, update, chat_data):
+def confirm_ama_handler(bot, update, user_data):
     chat_id = update.message.chat.id
     user = update.message.from_user
 
-    if chat_data.get("current_ama_id_and_text") is None:
+    if user_data.get("current_ama_id_and_text") is None:
         send_message(bot, chat_id, "No pending confirmation found!")
         return
 
-    user_id, text = chat_data["current_ama_id_and_text"]
+    user_id, text = user_data["current_ama_id_and_text"]
 
     if user_id < 0 or user_id >= len(ama_database["users"]):
         send_message(bot, chat_id, "That (%s) is not a valid ID in the range [%s, %s)!" %
@@ -97,8 +98,10 @@ def confirm_ama_handler(bot, update, chat_data):
     send_message(bot, telegram_id, "You have a new question (%s): %s" % (new_question_id, text))
     send_message(bot, telegram_id, "You can reply to the sender with /reply %s {text}." % new_question_id)
 
+    user_data["current_ama_id_and_text"] = None
 
-def ama_handler(bot, update, chat_data, args):
+
+def ama_handler(bot, update, user_data, args):
     chat_id = update.message.chat.id
     user = update.message.from_user
 
@@ -123,7 +126,7 @@ def ama_handler(bot, update, chat_data, args):
             send_message(bot, chat_id, "Error: Could not find a matching name!")
             return
         if user_id != -1:
-            chat_data["current_ama_id_and_text"] = (user_id, text)
+            user_data["current_ama_id_and_text"] = (user_id, text)
             send_message(bot, chat_id, "Are you sure you want to ask %s this question? If so, use /confirmama." % official_name)
             return
 
@@ -271,6 +274,42 @@ def reply_handler(bot, update, args):
     send_message(bot, user.id, "Your reply has been sent!")
 
 
+def clear_handler(bot, update):
+    chat_id = update.message.chat.id
+    user = update.message.from_user
+
+    if user.id not in [t[0] for t in ama_database["users"]]:
+        send_message(bot, chat_id, "You haven't made an AMA by joining using /am!")
+        return
+
+    ama_database["amas"][user.id] = []
+    send_message(bot, chat_id, "Your AMA has been cleared!")
+
+
+def feedback_handler(bot, update, args):
+    user = update.message.from_user
+
+    username = ""
+    for id, name in ama_database["users"]:
+        if id == user.id:
+            username = name
+            break
+
+    if args and len(args) > 0:
+        feedback = open("feedback.txt", "a+")
+
+        feedback.write(str(update.message.from_user.id) +
+                       " (" + username + ") at " +
+                       str(datetime.datetime.now()) + "\n")
+        feedback.write(" ".join(args) + "\n\n")
+
+        feedback.close()
+
+        send_message(bot, update.message.chat_id, text="Your response has been recorded!")
+    else:
+        send_message(bot, update.message.chat_id, text="Error: You must input a non-empty string.")
+
+
 def save_database(bot, update):
     if os.path.exists("amadatabase"):
         shutil.copy("amadatabase", "amadatabasebackup")
@@ -317,15 +356,19 @@ if __name__ == "__main__":
     users_aliases = ["users", "u"]
     add_me_aliases = ["addme", "setname", "am", "sn"]
     remove_me_aliases = ["removeme", "rm"]
+    feedback_aliases = ["feedback", "report"]
+    clear_aliases = ["clear"]
 
-    commands = [("ama", 3, ama_aliases),
+    commands = [("ama", 4, ama_aliases),
                 ("reply", 1, reply_aliases),
                 ("display", 1, display_aliases),
                 ("users", 0, users_aliases),
                 ("add_me", 1, add_me_aliases),
                 ("remove_me", 0, remove_me_aliases),
                 ("remove_me_confirmed", 0, ["rmc"]),
-                ("confirm_ama", 2, ["confirmama"])]
+                ("feedback", 1, feedback_aliases),
+                ("confirm_ama", 3, ["confirmama"]),
+                ("clear", 0, clear_aliases)]
 
     for c in commands:
         func = locals()[c[0] + "_handler"]
@@ -336,7 +379,9 @@ if __name__ == "__main__":
         elif c[1] == 2:
             dispatcher.add_handler(CommandHandler(c[2], func, pass_chat_data=True))
         elif c[1] == 3:
-            dispatcher.add_handler(CommandHandler(c[2], func, pass_chat_data=True, pass_args=True))
+            dispatcher.add_handler(CommandHandler(c[2], func, pass_user_data=True))
+        elif c[1] == 4:
+            dispatcher.add_handler(CommandHandler(c[2], func, pass_user_data=True, pass_args=True))
 
     # Set up job queue for repeating automatic tasks.
 

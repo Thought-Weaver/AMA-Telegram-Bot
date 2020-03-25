@@ -1,0 +1,11 @@
+Patch Notes (3/25/2020):
+
+New Features:
+
+-Added /report and /feedback.
+-Added /clear to remove all responses your AMA board. This will permanently delete all responses currently on your board.
+
+Bug Fixes:
+
+-Fixed the formatting for /users.
+-Fixed a bug with /confirmama.

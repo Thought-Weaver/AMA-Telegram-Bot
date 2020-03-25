@@ -1,7 +1,7 @@
 Below is a list of useful functions:
 
 /ama - Ask a question on someone's AMA board.
-/reply - Reply to a question on your AMA board.
+/reply - Replies to the individual who asked a question on your AMA board.
 /display - Display a person's AMA board.
 /users - Display a list of users.
 /addme - Add yourself to the database.
