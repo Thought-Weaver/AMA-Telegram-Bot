@@ -93,7 +93,7 @@ def confirm_ama_handler(bot, update, chat_data):
     telegram_id = ama_database["users"][user_id][0]
     ama_database["amas"][telegram_id].append((user.id, text))
 
-    new_question_id = len(ama_database["amas"][telegram_id])
+    new_question_id = len(ama_database["amas"][telegram_id]) - 1
     send_message(bot, chat_id, "Your question has been asked!")
     send_message(bot, telegram_id, "You have a new question (%s): %s" % (new_question_id, text))
     send_message(bot, telegram_id, "You can reply to the sender with /reply %s {text}." % new_question_id)
@@ -113,7 +113,7 @@ def ama_handler(bot, update, chat_data, args):
         user_id = int(args[0])
     except ValueError:
         user_id = -1
-        name = " ".join(args)
+        name = str(args[0])
         official_name = ""
         for i, tup in enumerate(ama_database["users"]):
             if name.lower() in tup[1].lower():
@@ -136,7 +136,7 @@ def ama_handler(bot, update, chat_data, args):
     telegram_id = ama_database["users"][user_id][0]
     ama_database["amas"][telegram_id].append((user.id, text))
 
-    new_question_id = len(ama_database["amas"][telegram_id])
+    new_question_id = len(ama_database["amas"][telegram_id]) - 1
     send_message(bot, chat_id, "Your question has been asked!")
     send_message(bot, telegram_id, "You have a new question (%s): %s" % (new_question_id, text))
     send_message(bot, telegram_id, "You can reply to the sender with /reply %s {text}." % new_question_id)
@@ -146,15 +146,15 @@ def users_handler(bot, update):
     chat_id = update.message.chat.id
 
     text = "Users:\n\n"
-    for i, (telegram_id, name) in enumerate(ama_database["users"].items()):
-        text += "(%s): %s" % (i, name)
+    for i, tup in enumerate(ama_database["users"]):
+        text += "(%s): %s" % (i, tup[1])
     send_message(bot, chat_id, text)
 
 
 def display_handler(bot, update, args):
     chat_id = update.message.chat.id
 
-    if len(args) != 1:
+    if len(args) < 1:
         send_message(bot, chat_id, "Usage: /display {ID from /users or name}")
         return
 
@@ -184,7 +184,7 @@ def display_handler(bot, update, args):
     send_message(bot, chat_id, text)
 
 
-def add_me_handler(bot, update, chat_data, args):
+def add_me_handler(bot, update, args):
     chat_id = update.message.chat.id
     user = update.message.from_user
 
@@ -193,9 +193,10 @@ def add_me_handler(bot, update, chat_data, args):
     else:
         username = " ".join(args)
 
-    if ama_database["users"].get(user.id) is not None:
-        send_message(bot, chat_id, "You're already in the database!")
-        return
+    for id, name in ama_database["users"]:
+        if id == user.id:
+            send_message(bot, chat_id, "You're already in the database!")
+            return
 
     ama_database["users"].append((user.id, username))
     # Sort by name
@@ -272,7 +273,8 @@ def reply_handler(bot, update, args):
 
 
 def save_database(bot, update):
-    shutil.copy("amadatabase", "amadatabasebackup")
+    if os.path.exists("amadatabase"):
+        shutil.copy("amadatabase", "amadatabasebackup")
     pickle.dump(ama_database, open("amadatabase", "wb"))
 
 
