@@ -66,12 +66,12 @@ def send_patchnotes(bot):
     if PATCHNUMBER in ama_database["patches"] or not os.path.isfile(path):
         return
 
-    ama_database["patches"].append(PATCHNUMBER)
-
     text = open(path, "r").read()
 
     for (telegram_id, name) in ama_database["users"]:
         send_message(bot, telegram_id, text)
+
+    ama_database["patches"].append(PATCHNUMBER)
 
 
 def get_username(user):
@@ -297,7 +297,7 @@ def reply_handler(bot, update, args):
                      (question_id, 0, ama_database["amas"][user.id]))
         return
 
-    telegram_id = ama_database["amas"][user.id][question_id][0]
+    telegram_id, question_text = ama_database["amas"][user.id][question_id]
 
     username = ""
     for id, name in ama_database["users"]:
@@ -307,7 +307,8 @@ def reply_handler(bot, update, args):
 
     ama_database["reply_history"].append((telegram_id, ama_database["amas"][user.id][question_id][1], user.id, text))
 
-    send_message(bot, telegram_id, "Reply to your question (%s) on the AMA for %s: %s" % (question_id, username, text))
+    send_message(bot, chat_id, "%s just replied to the question (%s): %s" % (username, question_id, question_text))
+    send_message(bot, telegram_id, "You asked the following question on the AMA for %s: %s\n\nHere is their reply: %s" % (username, question_text, text))
     send_message(bot, user.id, "Your reply has been sent!")
 
 
@@ -470,6 +471,7 @@ if __name__ == "__main__":
 
     # Run the bot
 
-    updater.start_polling()
     send_patchnotes(bot)
+
+    updater.start_polling()
     updater.idle()
