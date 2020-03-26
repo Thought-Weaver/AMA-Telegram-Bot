@@ -108,6 +108,11 @@ def confirm_ama_handler(bot, update, user_data):
         return
 
     telegram_id = ama_database["users"][user_id][0]
+
+    if telegram_id == user.id:
+        send_message(bot, chat_id, "You can't ask yourself a question!")
+        return
+
     ama_database["amas"][telegram_id].append((user.id, text))
 
     new_question_id = len(ama_database["amas"][telegram_id]) - 1
@@ -153,6 +158,11 @@ def ama_handler(bot, update, user_data, args):
         return
 
     telegram_id = ama_database["users"][user_id][0]
+
+    if telegram_id == user.id:
+        send_message(bot, chat_id, "You can't ask yourself a question!")
+        return
+
     ama_database["amas"][telegram_id].append((user.id, text))
 
     new_question_id = len(ama_database["amas"][telegram_id]) - 1
