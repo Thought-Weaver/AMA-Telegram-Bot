@@ -174,14 +174,20 @@ def display_handler(bot, update, args):
     chat_id = update.message.chat.id
     user = update.message.from_user
 
-    if len(args) == 0:
-        if user.id not in [t[0] for t in ama_database["users"]]:
+    if len(args) < 1:
+        username = ""
+        for (id, name) in ama_database["users"]:
+            if id == user.id:
+                username = name
+                break
+
+        if username == "":
             send_message(bot, chat_id, "You haven't made an AMA by joining using /am!")
             return
 
-        text = "<b>AMA for %s:</b>\n\n" % ama_database["users"][user.id][1]
+        text = "<b>AMA for %s:</b>\n\n" % username
         count = 0
-        for telegram_id, question in ama_database["amas"][ama_database["users"][user.id][0]]:
+        for telegram_id, question in ama_database["amas"][user.id]:
             text += "(%s) %s\n\n" % (count, question)
             count += 1
         send_message(bot, chat_id, text)
@@ -370,7 +376,7 @@ def handle_error(bot, update, error):
         logging.getLogger(__name__).warning('Telegram Error! %s caused by this update: %s', error, update)
 
 
-def main():
+if __name__ == "__main__":
     bot = telegram.Bot(token=TOKEN)
     updater = Updater(token=TOKEN)
     dispatcher = updater.dispatcher
@@ -467,7 +473,3 @@ def main():
     updater.start_polling()
     send_patchnotes(bot)
     updater.idle()
-
-
-if __name__ == "__main__":
-    main()
