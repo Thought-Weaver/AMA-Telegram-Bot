@@ -8,16 +8,22 @@ from telegram.error import TelegramError
 import logging
 
 import os
+import sys
+from threading import Thread
 import shutil
 import pickle
 import datetime
 from collections import defaultdict
 
+from functools import wraps
+
 with open("api_key.txt", 'r') as f:
     TOKEN = f.read().rstrip()
 
 # Format is mmddyyyy and then additional letters if I need a hotfix.
-PATCHNUMBER = "03252020A"
+PATCHNUMBER = "03262020"
+
+ADMIN = [539621524]
 
 """
 Contains:
@@ -25,7 +31,7 @@ Contains:
 amas - Key is telegram_id, value is list of (telegram_id, question) tuples.
 users - A list of (telegram_id, name) tuples.
 patches - A list of strings representing the patch history.
-reply_history - A list of replies in (asker_id, question_id, person_who_made_ama_id, text) tuples.
+reply_history - A list of replies in (asker_id, question_text, person_who_made_ama_id, text) tuples.
 """
 ama_database = pickle.load(open("./amadatabase", "rb")) if os.path.isfile("./amadatabase") else {}
 
@@ -41,6 +47,17 @@ def static_handler(command):
     text = open("static_responses/{}.txt".format(command), "r").read()
     return CommandHandler(command,
         lambda bot, update: send_message(bot, update.message.chat.id, text))
+
+
+def restricted(func):
+    @wraps(func)
+    def wrapped(update, context, *args, **kwargs):
+        user_id = update.effective_user.id
+        if user_id not in ADMIN:
+            print("Unauthorized access denied for {}.".format(user_id))
+            return
+        return func(update, context, *args, **kwargs)
+    return wrapped
 
 
 def send_patchnotes(bot):
@@ -155,8 +172,22 @@ def users_handler(bot, update):
 
 def display_handler(bot, update, args):
     chat_id = update.message.chat.id
+    user = update.message.from_user
 
-    if len(args) < 1:
+    if len(args) == 0:
+        if user.id not in [t[0] for t in ama_database["users"]]:
+            send_message(bot, chat_id, "You haven't made an AMA by joining using /am!")
+            return
+
+        text = "<b>AMA for %s:</b>\n\n" % ama_database["users"][user.id][1]
+        count = 0
+        for telegram_id, question in ama_database["amas"][ama_database["users"][user.id][0]]:
+            text += "(%s) %s\n\n" % (count, question)
+            count += 1
+        send_message(bot, chat_id, text)
+        return
+
+    if len(args) > 1:
         send_message(bot, chat_id, "Usage: /display {ID from /users or name}")
         return
 
@@ -268,13 +299,13 @@ def reply_handler(bot, update, args):
             username = name
             break
 
-    ama_database["reply_history"].append((telegram_id, question_id, user.id, text))
+    ama_database["reply_history"].append((telegram_id, ama_database["amas"][user.id][question_id][1], user.id, text))
 
     send_message(bot, telegram_id, "Reply to your question (%s) on the AMA for %s: %s" % (question_id, username, text))
     send_message(bot, user.id, "Your reply has been sent!")
 
 
-def clear_handler(bot, update):
+def clear_handler(bot, update, args):
     chat_id = update.message.chat.id
     user = update.message.from_user
 
@@ -282,8 +313,24 @@ def clear_handler(bot, update):
         send_message(bot, chat_id, "You haven't made an AMA by joining using /am!")
         return
 
-    ama_database["amas"][user.id] = []
-    send_message(bot, chat_id, "Your AMA has been cleared!")
+    if len(args) == 0:
+        ama_database["amas"][user.id] = []
+        send_message(bot, chat_id, "Your AMA has been cleared!")
+        return
+
+    try:
+        question_id = int(args[0])
+    except ValueError:
+        send_message(bot, chat_id, "That (%s) was not a valid question ID." % args[0])
+        return
+
+    if question_id < 0 or question_id >= len(ama_database["amas"][user.id]):
+        send_message(bot, chat_id, "That (%s) is not a valid question ID in the range [%s, %s)!" %
+                     (question_id, 0, ama_database["amas"][user.id]))
+        return
+
+    ama_database["amas"][user.id] = ama_database["amas"][user.id][:question_id] + ama_database["amas"][user.id][question_id + 1:]
+    send_message(bot, chat_id, "Question (%s) has been removed from your AMA!" % question_id)
 
 
 def feedback_handler(bot, update, args):
@@ -323,7 +370,7 @@ def handle_error(bot, update, error):
         logging.getLogger(__name__).warning('Telegram Error! %s caused by this update: %s', error, update)
 
 
-if __name__ == "__main__":
+def main():
     bot = telegram.Bot(token=TOKEN)
     updater = Updater(token=TOKEN)
     dispatcher = updater.dispatcher
@@ -368,7 +415,7 @@ if __name__ == "__main__":
                 ("remove_me_confirmed", 0, ["rmc"]),
                 ("feedback", 1, feedback_aliases),
                 ("confirm_ama", 3, ["confirmama"]),
-                ("clear", 0, clear_aliases)]
+                ("clear", 1, clear_aliases)]
 
     for c in commands:
         func = locals()[c[0] + "_handler"]
@@ -400,8 +447,27 @@ if __name__ == "__main__":
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO, filename='logging.txt', filemode='a+')
 
+    # Restart
+
+    def stop_and_restart():
+        updater.stop()
+        os.execl(sys.executable, sys.executable, *sys.argv)
+
+    def restart(bot, update):
+        save_database(bot, update)
+        update.message.reply_text('Bot is restarting...')
+        Thread(target=stop_and_restart).start()
+
+    dispatcher.add_handler(CommandHandler("restart",
+                                          restart,
+                                          filters=Filters.user(username='@thweaver')))
+
     # Run the bot
 
     updater.start_polling()
     send_patchnotes(bot)
     updater.idle()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,6 @@
+Patch Notes (3/26/2020):
+
+New Features:
+
+-You can now do /clear {question_id} to remove a specific question from your board.
+-Using /display with no arguments will show your board.
