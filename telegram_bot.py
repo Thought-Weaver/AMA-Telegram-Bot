@@ -251,7 +251,7 @@ def add_me_handler(bot, update, args):
     # Sort by name
     ama_database["users"] = sorted(ama_database["users"], key=lambda x: str(x[1]).lower())
 
-    send_message(bot, chat_id, "You've been added!")
+    send_message(bot, chat_id, "You've been added! Make sure to DM the bot with /start to be able to get messages!")
 
 
 def remove_me_confirmed_handler(bot, update):
