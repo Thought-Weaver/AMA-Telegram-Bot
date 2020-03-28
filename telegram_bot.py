@@ -304,7 +304,7 @@ def reply_handler(bot, update, args):
 
     if question_id < 0 or question_id >= len(ama_database["amas"][user.id]):
         send_message(bot, chat_id, "That (%s) is not a valid question ID in the range [%s, %s)!" %
-                     (question_id, 0, ama_database["amas"][user.id]))
+                     (question_id, 0, len(ama_database["amas"][user.id])))
         return
 
     telegram_id, question_text = ama_database["amas"][user.id][question_id]
@@ -343,7 +343,7 @@ def clear_handler(bot, update, args):
 
     if question_id < 0 or question_id >= len(ama_database["amas"][user.id]):
         send_message(bot, chat_id, "That (%s) is not a valid question ID in the range [%s, %s)!" %
-                     (question_id, 0, ama_database["amas"][user.id]))
+                     (question_id, 0, len(ama_database["amas"][user.id])))
         return
 
     ama_database["amas"][user.id] = ama_database["amas"][user.id][:question_id] + ama_database["amas"][user.id][question_id + 1:]
