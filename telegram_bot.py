@@ -36,9 +36,11 @@ reply_history - A list of replies in (asker_id, question_text, person_who_made_a
 ama_database = pickle.load(open("./amadatabase", "rb")) if os.path.isfile("./amadatabase") else {}
 
 
-def send_message(bot, chat_id, text):
+def send_message(bot, chat_id, text, photo=None):
     try:
         bot.send_message(chat_id=chat_id, text=text, parse_mode=telegram.ParseMode.HTML)
+        if photo is not None:
+            bot.send_photo(chat_id=chat_id, photo=photo, parse_mode=telegram.ParseMode.HTML)
     except TelegramError as e:
         raise e
 
@@ -285,6 +287,7 @@ def remove_me_handler(bot, update):
 def reply_handler(bot, update, args):
     chat_id = update.message.chat.id
     user = update.message.from_user
+    photo = update.message.photo[-1]
 
     if user.id not in [t[0] for t in ama_database["users"]]:
         send_message(bot, chat_id, "You haven't made an AMA by joining using /am!")
@@ -318,7 +321,7 @@ def reply_handler(bot, update, args):
     ama_database["reply_history"].append((telegram_id, ama_database["amas"][user.id][question_id][1], user.id, text))
 
     send_message(bot, chat_id, "%s just replied to the question (%s): %s" % (username, question_id, question_text))
-    send_message(bot, telegram_id, "You asked the following question on the AMA for %s: %s\n\nHere is their reply: %s" % (username, question_text, text))
+    send_message(bot, telegram_id, "You asked the following question on the AMA for %s: %s\n\nHere is their reply: %s" % (username, question_text, text), photo=photo)
     send_message(bot, user.id, "Your reply has been sent!")
 
 
