@@ -285,9 +285,13 @@ def remove_me_handler(bot, update):
 
 
 def reply_handler(bot, update, args):
-    chat_id = update.message.chat.id
-    user = update.message.from_user
-    photo = update.message.photo[-1]
+    chat_id = update.effective_chat.id
+    user = update.effective_message.from_user
+
+    try:
+        photo = update.effective_message.photo[-1]
+    except Exception as e:
+        photo = None
 
     if user.id not in [t[0] for t in ama_database["users"]]:
         send_message(bot, chat_id, "You haven't made an AMA by joining using /am!")
