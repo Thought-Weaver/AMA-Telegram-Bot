@@ -368,12 +368,13 @@ def mass_ama_handler(bot, update, args):
     text = " ".join(args)
 
     for id, name in ama_database["users"]:
-        ama_database["amas"][id].append((user.id, text))
+        if id != user.id:
+            ama_database["amas"][id].append((user.id, text))
 
-        new_question_id = len(ama_database["amas"][id]) - 1
-        send_message(bot, id, "You have a new question (%s): %s\n\n"
-                              "You can reply to the sender with /reply %s {text}." %
-                              (new_question_id, text, new_question_id))
+            new_question_id = len(ama_database["amas"][id]) - 1
+            send_message(bot, id, "You have a new question (%s): %s\n\n"
+                                  "You can reply to the sender with /reply %s {text}." %
+                                  (new_question_id, text, new_question_id))
     send_message(bot, chat_id, "Your question has been asked!")
 
 
