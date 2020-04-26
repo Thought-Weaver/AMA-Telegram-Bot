@@ -21,7 +21,7 @@ with open("api_key.txt", 'r') as f:
     TOKEN = f.read().rstrip()
 
 # Format is mmddyyyy and then additional letters if I need a hotfix.
-PATCHNUMBER = "03262020"
+PATCHNUMBER = "04262020"
 
 ADMIN = [539621524]
 
@@ -34,7 +34,6 @@ patches - A list of strings representing the patch history.
 reply_history - A list of replies in (asker_id, question_text, person_who_made_ama_id, text) tuples.
 """
 ama_database = pickle.load(open("./amadatabase", "rb")) if os.path.isfile("./amadatabase") else {}
-
 
 def send_message(bot, chat_id, text, photo=None):
     try:
@@ -169,8 +168,9 @@ def ama_handler(bot, update, user_data, args):
 
     new_question_id = len(ama_database["amas"][telegram_id]) - 1
     send_message(bot, chat_id, "Your question has been asked!")
-    send_message(bot, telegram_id, "You have a new question (%s): %s" % (new_question_id, text))
-    send_message(bot, telegram_id, "You can reply to the sender with /reply %s {text}." % new_question_id)
+    send_message(bot, telegram_id, "You have a new question (%s): %s\n\n"
+                          "You can reply to the sender with /reply %s {text}." %
+                 (new_question_id, text, new_question_id))
 
 
 def users_handler(bot, update):
@@ -357,6 +357,26 @@ def clear_handler(bot, update, args):
     send_message(bot, chat_id, "Question (%s) has been removed from your AMA!" % question_id)
 
 
+def mass_ama_handler(bot, update, args):
+    chat_id = update.message.chat.id
+    user = update.message.from_user
+
+    if len(args) < 1:
+        send_message(bot, chat_id, "Usage: /massama {text}")
+        return
+
+    text = " ".join(args)
+
+    for id, name in ama_database["users"]:
+        ama_database["amas"][id].append((user.id, text))
+
+        new_question_id = len(ama_database["amas"][id]) - 1
+        send_message(bot, id, "You have a new question (%s): %s\n\n"
+                              "You can reply to the sender with /reply %s {text}." %
+                              (new_question_id, text, new_question_id))
+    send_message(bot, chat_id, "Your question has been asked!")
+
+
 def feedback_handler(bot, update, args):
     user = update.message.from_user
 
@@ -429,6 +449,7 @@ if __name__ == "__main__":
     remove_me_aliases = ["removeme", "rm"]
     feedback_aliases = ["feedback", "report"]
     clear_aliases = ["clear"]
+    mass_ama_aliases = ["massama", "massask", "ma"]
 
     commands = [("ama", 4, ama_aliases),
                 ("reply", 1, reply_aliases),
@@ -439,7 +460,8 @@ if __name__ == "__main__":
                 ("remove_me_confirmed", 0, ["rmc"]),
                 ("feedback", 1, feedback_aliases),
                 ("confirm_ama", 3, ["confirmama"]),
-                ("clear", 1, clear_aliases)]
+                ("clear", 1, clear_aliases),
+                ("mass_ama", 1, mass_ama_aliases)]
 
     for c in commands:
         func = locals()[c[0] + "_handler"]
