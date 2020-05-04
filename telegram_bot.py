@@ -325,7 +325,8 @@ def reply_handler(bot, update, args):
     ama_database["reply_history"].append((telegram_id, ama_database["amas"][user.id][question_id][1], user.id, text))
 
     send_message(bot, chat_id, "%s just replied to the question (%s): %s" % (username, question_id, question_text))
-    send_message(bot, telegram_id, "You asked the following question on the AMA for %s: %s\n\nHere is their reply: %s" % (username, question_text, text), photo=photo)
+    send_message(bot, telegram_id, "You asked the following question on the AMA for %s: "
+                                   "%s\n\nHere is their reply: %s" % (username, question_text, text), photo=photo)
     send_message(bot, user.id, "Your reply has been sent!")
 
 
